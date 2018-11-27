@@ -1,0 +1,86 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+import java.net.*;
+
+public class Client {
+    static JTextArea messages;
+    static JTextField NewMessage;
+    static BufferedReader reader;
+    static PrintWriter writer;
+    static Socket sock;
+
+    public static void main(String[] args) {
+        Client client = new Client();
+        JFrame f = new JFrame();
+        f.setTitle("ChatMessenger");
+        JPanel p = new JPanel();
+        messages = new JTextArea(15, 30);
+        messages.setLineWrap(true);
+        messages.setWrapStyleWord(true);
+        messages.setEditable(false);
+        JScrollPane qscroller = new JScrollPane(messages);
+        qscroller.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        qscroller.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        NewMessage = new JTextField(20);
+        JButton sendButton = new JButton("Отправить");
+        sendButton.setBackground(Color.lightGray);
+        sendButton.addActionListener(new SendButtonListener());
+        p.add(qscroller);
+        p.add(NewMessage);
+        p.add(sendButton);
+        setUpNetworking();
+
+        Thread readerThread = new Thread(new IncomingReader());
+        readerThread.start();
+
+        f.getContentPane().add(BorderLayout.CENTER, p);
+        f.setSize(400, 500);
+        f.setVisible(true);
+    }
+
+
+
+    private static void setUpNetworking() {
+        try {
+            sock = new Socket("WIN-0DS5R4MV0NL", 49674);
+            InputStreamReader streamReader = new InputStreamReader(sock.getInputStream());
+            reader = new BufferedReader(streamReader);
+            writer = new PrintWriter(sock.getOutputStream());
+            System.out.println("Подключение установлено!");
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+    }
+
+
+    static class SendButtonListener implements ActionListener {
+
+        public void actionPerformed(ActionEvent e) {
+            try {
+                writer.println(NewMessage.getText());
+                writer.flush();
+            } catch (Exception ex) {
+                System.out.println(ex);
+            }
+            NewMessage.setText("");
+            NewMessage.requestFocus();
+        }
+    }
+
+
+    static class IncomingReader implements Runnable {
+        public void run() {
+            String message;
+            try {
+            while((message = reader.readLine() ) != null){
+                messages.append(message + "\n");
+            }
+            } catch (Exception ex) {
+                System.out.println(ex);
+            }
+        }
+
+    }
+}
